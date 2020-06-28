@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/cognitoidentity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestValidateTypeStringNullableBoolean(t *testing.T) {
@@ -3111,6 +3113,72 @@ func TestValidateRoute53ResolverName(t *testing.T) {
 		_, errors := validateRoute53ResolverName(tc.Value, "aws_route53_resolver_endpoint")
 		if len(errors) != tc.ErrCount {
 			t.Fatalf("Expected the AWS Route 53 Resolver Endpoint Name to not trigger a validation error for %q", tc.Value)
+		}
+	}
+}
+
+func TestValidateDuration(t *testing.T) {
+	noCustomValidation := func(_ time.Duration) error { return nil }
+	testCases := []struct {
+		Value     string
+		ErrCount  int
+		Validator schema.SchemaValidateFunc
+	}{
+		{
+			Value:     "0",
+			Validator: validateDurationFunc(noCustomValidation),
+		},
+		{
+			Value:     "100s",
+			Validator: validateDurationFunc(noCustomValidation),
+		},
+		{
+			Value:     "1m",
+			Validator: validateDurationFunc(noCustomValidation),
+		},
+		{
+			Value:     "1h",
+			Validator: validateDurationFunc(noCustomValidation),
+		},
+		{
+			Validator: validateDurationFunc(noCustomValidation),
+			Value:     "5",
+			ErrCount:  1,
+		},
+		{
+			Validator: validateDurationFunc(noCustomValidation),
+			Value:     "invalid",
+			ErrCount:  1,
+		},
+		{
+			Validator: validateDurationBetween(-100*time.Minute, 100*time.Hour),
+			Value:     "-5m",
+		},
+		{
+			Validator: validateDurationBetween(-100*time.Minute, 100*time.Hour),
+			Value:     "-10h",
+			ErrCount:  1,
+		},
+		{
+			Validator: validateDurationPositive,
+			Value:     "-5m",
+			ErrCount:  1,
+		},
+		{
+			Validator: validateDurationPositive,
+			Value:     "0",
+		},
+		{
+			Validator: validateDurationPositive,
+			Value:     "5m",
+		},
+	}
+
+	for _, tc := range testCases {
+		_, errors := tc.Validator(tc.Value, "test_property")
+
+		if len(errors) != tc.ErrCount {
+			t.Fatalf("expected validateDuration to trigger %d errors but got %d for input %q: %v", tc.ErrCount, len(errors), tc.Value, errors)
 		}
 	}
 }

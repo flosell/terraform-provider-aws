@@ -285,22 +285,10 @@ func resourceAwsAutoscalingGroup() *schema.Resource {
 			},
 
 			"wait_for_capacity_timeout": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "10m",
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					value := v.(string)
-					duration, err := time.ParseDuration(value)
-					if err != nil {
-						errors = append(errors, fmt.Errorf(
-							"%q cannot be parsed as a duration: %s", k, err))
-					}
-					if duration < 0 {
-						errors = append(errors, fmt.Errorf(
-							"%q must be greater than zero", k))
-					}
-					return
-				},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "10m",
+				ValidateFunc: validateDurationPositive,
 			},
 
 			"wait_for_elb_capacity": {

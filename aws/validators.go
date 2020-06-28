@@ -2463,3 +2463,36 @@ func validateRoute53ResolverName(v interface{}, k string) (ws []string, errors [
 
 	return
 }
+
+func validateDurationPositive(v interface{}, k string) (ws []string, errors []error) {
+	return validateDurationFunc(func(d time.Duration) error {
+		if d < 0 {
+			return fmt.Errorf(
+				"%q must be greater than zero", k)
+		}
+		return nil
+	})(v, k)
+}
+
+func validateDurationBetween(min time.Duration, max time.Duration) schema.SchemaValidateFunc {
+	return validateDurationFunc(func(d time.Duration) error {
+		if d < min || d > max {
+			return fmt.Errorf("%q must be between %s and %s", d, min, max)
+		}
+		return nil
+	})
+}
+func validateDurationFunc(customValidator func(duration time.Duration) error) schema.SchemaValidateFunc {
+	return func(v interface{}, k string) (ws []string, errors []error) {
+		value := v.(string)
+		duration, err := time.ParseDuration(value)
+		if err != nil {
+			errors = append(errors, fmt.Errorf(
+				"%q cannot be parsed as a duration: %s", k, err))
+		}
+		if err = customValidator(duration); err != nil {
+			errors = append(errors, err)
+		}
+		return
+	}
+}

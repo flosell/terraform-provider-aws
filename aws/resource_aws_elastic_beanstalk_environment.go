@@ -140,39 +140,15 @@ func resourceAwsElasticBeanstalkEnvironment() *schema.Resource {
 				ConflictsWith: []string{"solution_stack_name", "platform_arn"},
 			},
 			"wait_for_ready_timeout": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "20m",
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					value := v.(string)
-					duration, err := time.ParseDuration(value)
-					if err != nil {
-						errors = append(errors, fmt.Errorf(
-							"%q cannot be parsed as a duration: %s", k, err))
-					}
-					if duration < 0 {
-						errors = append(errors, fmt.Errorf(
-							"%q must be greater than zero", k))
-					}
-					return
-				},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "20m",
+				ValidateFunc: validateDurationPositive,
 			},
 			"poll_interval": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					value := v.(string)
-					duration, err := time.ParseDuration(value)
-					if err != nil {
-						errors = append(errors, fmt.Errorf(
-							"%q cannot be parsed as a duration: %s", k, err))
-					}
-					if duration < 10*time.Second || duration > 60*time.Second {
-						errors = append(errors, fmt.Errorf(
-							"%q must be between 10s and 180s", k))
-					}
-					return
-				},
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateDurationBetween(10*time.Second, 60*time.Second),
 			},
 			"autoscaling_groups": {
 				Type:     schema.TypeList,
